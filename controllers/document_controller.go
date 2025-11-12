@@ -13,21 +13,54 @@ import (
 // CREATE DOCUMENT
 // =======================
 func CreateDocument(c *gin.Context) {
-	var document models.Document
+	sender := c.PostForm("sender")
+	subject := c.PostForm("subject")
+	letterType := c.PostForm("letter_type")
+	userID := c.PostForm("user_id")
 
-	if err := c.ShouldBindJSON(&document); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File tidak ditemukan"})
 		return
 	}
 
+	// buka file untuk dibaca
+	src, err := file.Open()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membuka file: " + err.Error()})
+		return
+	}
+	defer src.Close()
+
+	// upload ke Google Drive
+	fileID, err := config.UploadToDrive(src, file.Filename)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal upload ke Google Drive: " + err.Error()})
+		return
+	}
+
+	// hanya simpan nama file dan ID drive
+	document := models.Document{
+		Sender:     sender,
+		FileName:   file.Filename,
+		Subject:    subject,
+		LetterType: letterType,
+	}
+
+	if userID != "" {
+		document.UserID = &userID
+	}
+
 	if err := config.DB.Create(&document).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menambahkan dokumen: " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan dokumen: " + err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message":  "Dokumen berhasil ditambahkan",
-		"document": document,
+		"message":   "Dokumen berhasil diupload ke Google Drive",
+		"file_id":   fileID,
+		"file_name": file.Filename,
+		"document":  document,
 	})
 }
 
