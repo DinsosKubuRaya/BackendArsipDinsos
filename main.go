@@ -22,7 +22,7 @@ func main() {
 
 	config.ConnectDatabase()
 
-	if err := config.DB.AutoMigrate(&models.User{}, &models.Document{}, &models.SecretToken{}); err != nil {
+	if err := config.DB.AutoMigrate(&models.User{}, &models.Document{}, &models.SecretToken{}, &models.SuperiorOrder{}, &models.DocumentStaff{}); err != nil {
 		log.Fatal("Gagal migrasi tabel:", err)
 	}
 
