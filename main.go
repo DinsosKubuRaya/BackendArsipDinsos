@@ -17,10 +17,12 @@ func main() {
 
 	routes.UserRoutes(r)
 	routes.DocumentRoutes(r)
+	routes.LoginRoutes(r)
+	routes.LogoutRoutes(r)
 
 	config.ConnectDatabase()
 
-	if err := config.DB.AutoMigrate(&models.User{}, &models.Document{}); err != nil {
+	if err := config.DB.AutoMigrate(&models.User{}, &models.Document{}, &models.SecretToken{}); err != nil {
 		log.Fatal("Gagal migrasi tabel:", err)
 	}
 
